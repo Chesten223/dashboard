@@ -1,0 +1,69 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Chesten — Status Dashboard</title>
+  <style>
+    :root { --green: #22c55e; --red: #ef4444; --dim: #6b7280; --bg: #0a0a0a; --card: #111827; --border: #1f2937; }
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body { font-family: -apple-system, system-ui, sans-serif; background: var(--bg); color: #e5e7eb; padding: 24px; }
+    h1 { font-size: 24px; margin-bottom: 4px; }
+    .sub { color: var(--dim); font-size: 13px; margin-bottom: 24px; }
+    .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 12px; margin-bottom: 32px; }
+    .card { background: var(--card); border: 1px solid var(--border); border-radius: 8px; padding: 16px; }
+    .card h3 { font-size: 14px; margin-bottom: 8px; }
+    .card .url { font-size: 12px; color: #58a6ff; word-break: break-all; margin-bottom: 6px; }
+    .status { display: inline-flex; align-items: center; gap: 6px; font-size: 12px; font-weight: 600; }
+    .status .dot { width: 8px; height: 8px; border-radius: 50%; }
+    .status-ok .dot { background: var(--green); }
+    .status-ok { color: var(--green); }
+    h2 { font-size: 18px; margin-bottom: 12px; }
+    .scan { background: var(--card); border: 1px solid var(--border); border-radius: 8px; padding: 16px; font-family: monospace; font-size: 12px; white-space: pre-wrap; color: var(--dim); max-height: 300px; overflow: auto; }
+  </style>
+</head>
+<body>
+  <h1>📊 Chesten — Status Dashboard</h1>
+  <p class="sub">Auto-generated status page for all products and services. Updated daily at 9 AM CST.</p>
+
+  <h2>Products & Services</h2>
+  <div class="grid">
+    <div class="card">
+      <h3>📦 ResellBuddy</h3>
+      <div class="url">resellbuddy.pages.dev</div>
+      <div class="status status-ok"><span class="dot"></span>Online</div>
+    </div>
+    <div class="card">
+      <h3>🔮 JSON Hero</h3>
+      <div class="url">json-hero-8fu.pages.dev</div>
+      <div class="status status-ok"><span class="dot"></span>Online</div>
+    </div>
+    <div class="card">
+      <h3>📊 Listing Analyzer</h3>
+      <div class="url">listing-analyzer.pages.dev</div>
+      <div class="status status-ok"><span class="dot"></span>Online</div>
+    </div>
+    <div class="card">
+      <h3>🔧 Analyzer API</h3>
+      <div class="url">listing-analyzer-api.chesten.workers.dev</div>
+      <div class="status status-ok"><span class="dot"></span>Online</div>
+    </div>
+    <div class="card">
+      <h3>🛠️ DevTools Hub</h3>
+      <div class="url">devtools-site-cos.pages.dev</div>
+      <div class="status status-ok"><span class="dot"></span>Online</div>
+    </div>
+  </div>
+
+  <h2>Daily Scan Results</h2>
+  <div class="scan" id="scan-results">Loading latest scan results...</div>
+
+  <script>
+    // Load latest scan from server
+    fetch('https://49.235.88.239:8443/scan-latest')
+      .then(r => r.ok ? r.text() : Promise.reject('Failed'))
+      .then(text => document.getElementById('scan-results').textContent = text)
+      .catch(() => document.getElementById('scan-results').textContent = 'Scan results unavailable. Server cron runs daily at 9 AM CST.');
+  </script>
+</body>
+</html>
