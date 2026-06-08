@@ -5,65 +5,102 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Chesten — Status Dashboard</title>
   <style>
-    :root { --green: #22c55e; --red: #ef4444; --dim: #6b7280; --bg: #0a0a0a; --card: #111827; --border: #1f2937; }
+    :root { --green: #22c55e; --red: #ef4444; --yellow: #eab308; --dim: #6b7280; --bg: #0a0a0a; --card: #111827; --border: #1f2937; }
     * { margin: 0; padding: 0; box-sizing: border-box; }
     body { font-family: -apple-system, system-ui, sans-serif; background: var(--bg); color: #e5e7eb; padding: 24px; }
     h1 { font-size: 24px; margin-bottom: 4px; }
     .sub { color: var(--dim); font-size: 13px; margin-bottom: 24px; }
     .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 12px; margin-bottom: 32px; }
-    .card { background: var(--card); border: 1px solid var(--border); border-radius: 8px; padding: 16px; }
+    .card { background: var(--card); border: 1px solid var(--border); border-radius: 8px; padding: 16px; transition: border-color 0.3s; }
+    .card:hover { border-color: #374151; }
     .card h3 { font-size: 14px; margin-bottom: 8px; }
-    .card .url { font-size: 12px; color: #58a6ff; word-break: break-all; margin-bottom: 6px; }
+    .card .url { font-size: 11px; color: #58a6ff; word-break: break-all; margin-bottom: 6px; }
+    .card .desc { font-size: 11px; color: var(--dim); margin-bottom: 8px; }
     .status { display: inline-flex; align-items: center; gap: 6px; font-size: 12px; font-weight: 600; }
     .status .dot { width: 8px; height: 8px; border-radius: 50%; }
-    .status-ok .dot { background: var(--green); }
+    .status-ok .dot { background: var(--green); box-shadow: 0 0 6px var(--green); }
     .status-ok { color: var(--green); }
+    .status-err .dot { background: var(--red); }
+    .status-err { color: var(--red); }
+    .status-loading .dot { background: var(--yellow); animation: pulse 1s infinite; }
+    .status-loading { color: var(--yellow); }
+    @keyframes pulse { 0%,100% { opacity: 1; } 50% { opacity: 0.4; } }
+    .response-time { font-size: 11px; color: var(--dim); margin-top: 4px; }
     h2 { font-size: 18px; margin-bottom: 12px; }
-    .scan { background: var(--card); border: 1px solid var(--border); border-radius: 8px; padding: 16px; font-family: monospace; font-size: 12px; white-space: pre-wrap; color: var(--dim); max-height: 300px; overflow: auto; }
+    .summary { display: flex; gap: 16px; margin-bottom: 24px; }
+    .summary-item { background: var(--card); border: 1px solid var(--border); border-radius: 8px; padding: 12px 16px; text-align: center; }
+    .summary-item .num { font-size: 24px; font-weight: 800; }
+    .summary-item .label { font-size: 11px; color: var(--dim); }
+    footer { margin-top: 32px; padding-top: 16px; border-top: 1px solid var(--border); color: var(--dim); font-size: 12px; text-align: center; }
+    footer a { color: #58a6ff; text-decoration: none; }
   </style>
 </head>
 <body>
   <h1>📊 Chesten — Status Dashboard</h1>
-  <p class="sub">Auto-generated status page for all products and services. Updated daily at 9 AM CST.</p>
+  <p class="sub">Live status of all products and services. Health checks run on page load.</p>
 
-  <h2>Products & Services</h2>
-  <div class="grid">
-    <div class="card">
-      <h3>📦 ResellBuddy</h3>
-      <div class="url">resellbuddy.pages.dev</div>
-      <div class="status status-ok"><span class="dot"></span>Online</div>
-    </div>
-    <div class="card">
-      <h3>🔮 JSON Hero</h3>
-      <div class="url">json-hero-8fu.pages.dev</div>
-      <div class="status status-ok"><span class="dot"></span>Online</div>
-    </div>
-    <div class="card">
-      <h3>📊 Listing Analyzer</h3>
-      <div class="url">listing-analyzer.pages.dev</div>
-      <div class="status status-ok"><span class="dot"></span>Online</div>
-    </div>
-    <div class="card">
-      <h3>🔧 Analyzer API</h3>
-      <div class="url">listing-analyzer-api.chesten.workers.dev</div>
-      <div class="status status-ok"><span class="dot"></span>Online</div>
-    </div>
-    <div class="card">
-      <h3>🛠️ DevTools Hub</h3>
-      <div class="url">devtools-site-cos.pages.dev</div>
-      <div class="status status-ok"><span class="dot"></span>Online</div>
-    </div>
+  <div class="summary">
+    <div class="summary-item"><div class="num" id="total">0</div><div class="label">Services</div></div>
+    <div class="summary-item"><div class="num" style="color:var(--green)" id="healthy">0</div><div class="label">Healthy</div></div>
+    <div class="summary-item"><div class="num" style="color:var(--red)" id="errors">0</div><div class="label">Errors</div></div>
+    <div class="summary-item"><div class="num" id="repos">0</div><div class="label">GitHub Repos</div></div>
   </div>
 
-  <h2>Daily Scan Results</h2>
-  <div class="scan" id="scan-results">Loading latest scan results...</div>
+  <h2>Products & Services</h2>
+  <div class="grid" id="services"></div>
+
+  <footer>
+    <p>Chesten Status Dashboard · <a href="https://github.com/Chesten223">GitHub</a> · <a href="https://devtools-site-cos.pages.dev">DevTools Hub</a> · <a href="https://resellbuddy.pages.dev">ResellBuddy</a></p>
+  </footer>
 
   <script>
-    // Load latest scan from server
-    fetch('https://49.235.88.239:8443/scan-latest')
-      .then(r => r.ok ? r.text() : Promise.reject('Failed'))
-      .then(text => document.getElementById('scan-results').textContent = text)
-      .catch(() => document.getElementById('scan-results').textContent = 'Scan results unavailable. Server cron runs daily at 9 AM CST.');
+    const services = [
+      { name: "📦 ResellBuddy", desc: "Poshmark & Mercari automation Chrome extension", url: "https://resellbuddy.pages.dev/", display: "resellbuddy.pages.dev" },
+      { name: "🔮 JSON Hero", desc: "Free JSON formatter, viewer, diff, validator (4 tools)", url: "https://json-hero-8fu.pages.dev/", display: "json-hero-8fu.pages.dev" },
+      { name: "📊 Listing Analyzer", desc: "Free AI-powered Poshmark listing analysis", url: "https://listing-analyzer.pages.dev/", display: "listing-analyzer.pages.dev" },
+      { name: "🔧 Analyzer API", desc: "Cloudflare Worker API for listing analysis", url: "https://listing-analyzer-api.chesten.workers.dev/", display: "listing-analyzer-api.chesten.workers.dev", method: "POST", body: '{"text":"test Nike sneakers"}' },
+      { name: "🛠️ DevTools Hub", desc: "All developer tools in one place", url: "https://devtools-site-cos.pages.dev/", display: "devtools-site-cos.pages.dev" },
+    ];
+
+    const grid = document.getElementById('services');
+    let healthy = 0, errors = 0;
+
+    document.getElementById('total').textContent = services.length;
+    document.getElementById('repos').textContent = '12';
+
+    services.forEach(svc => {
+      const card = document.createElement('div');
+      card.className = 'card';
+      card.innerHTML = `
+        <h3>${svc.name}</h3>
+        <div class="desc">${svc.desc}</div>
+        <div class="url">${svc.display}</div>
+        <div class="status status-loading" id="status-${svc.display.replace(/[^a-z]/gi,'')}"><span class="dot"></span>Checking...</div>
+        <div class="response-time" id="rt-${svc.display.replace(/[^a-z]/gi,'')}"></div>
+      `;
+      grid.appendChild(card);
+
+      const id = svc.display.replace(/[^a-z]/gi, '');
+      const start = performance.now();
+      const opts = svc.body ? { method: 'POST', headers: {'Content-Type':'application/json'}, body: svc.body } : {};
+      fetch(svc.url, { ...opts, mode: 'no-cors' })
+        .then(() => {
+          const ms = Math.round(performance.now() - start);
+          document.getElementById('status-' + id).className = 'status status-ok';
+          document.getElementById('status-' + id).innerHTML = '<span class="dot"></span>Online';
+          document.getElementById('rt-' + id).textContent = ms + 'ms';
+          healthy++;
+          document.getElementById('healthy').textContent = healthy;
+        })
+        .catch(() => {
+          const ms = Math.round(performance.now() - start);
+          document.getElementById('status-' + id).className = 'status status-err';
+          document.getElementById('status-' + id).innerHTML = '<span class="dot"></span>Error';
+          document.getElementById('rt-' + id).textContent = ms + 'ms';
+          errors++;
+          document.getElementById('errors').textContent = errors;
+        });
+    });
   </script>
 </body>
 </html>
